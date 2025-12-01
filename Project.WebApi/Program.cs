@@ -1,4 +1,4 @@
-using Project.Bll.DependencyResolvers;
+﻿using Project.Bll.DependencyResolvers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,7 +10,8 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddDbContextService();
+builder.Services.AddDbContextService(); // context class ın middleware eklenmesi
+builder.Services.AddRepositoryService(); // repository servisinin middleware e eklenmesi
 
 var app = builder.Build();
 
