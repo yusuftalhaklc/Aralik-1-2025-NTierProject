@@ -1,9 +1,9 @@
-﻿namespace Project.Bll.Dtos
+namespace Project.WebApi.Model.RequestModels
 {
-    public class AppUserProfileDto : BaseDto
+    public class CreateAppUserProfileRequestModel
     {
         public string FirstName { get; set; }
         public string Lastname { get; set; }
     }
-
 }
+

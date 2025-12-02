@@ -1,13 +1,20 @@
-﻿using Project.Bll.DependencyResolvers;
+﻿using FluentValidation;
+using FluentValidation.AspNetCore;
+using Project.Bll.DependencyResolvers;
 using Project.WebApi.MapperResolver;
+using Project.WebApi.Validators.RequestModels;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
-
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+
+builder.Services.AddFluentValidationAutoValidation();
+builder.Services.AddFluentValidationClientsideAdapters();
+
+// Hepsini entegre etmemize gerek yokmuş çünkü aynı assembly'deki tüm IValidator implementasyonlarını buluyor.
+builder.Services.AddValidatorsFromAssemblyContaining<CreateCategoryRequestModelValidator>();
+
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -19,7 +26,6 @@ builder.Services.AddVmMapperService();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

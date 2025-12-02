@@ -1,9 +1,9 @@
-﻿namespace Project.Bll.Dtos
+namespace Project.WebApi.Model.RequestModels
 {
-    public class OrderDetailDto : BaseDto
+    public class CreateOrderDetailRequestModel
     {
         public int OrderId { get; set; }
         public int ProductId { get; set; }
     }
-
 }
+

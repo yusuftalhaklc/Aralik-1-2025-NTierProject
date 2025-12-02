@@ -1,10 +1,10 @@
-﻿namespace Project.Bll.Dtos
+namespace Project.WebApi.Model.RequestModels
 {
-    public class ProductDto : BaseDto
+    public class CreateProductRequestModel
     {
         public string ProductName { get; set; }
         public decimal UnitPrice { get; set; }
         public int? CategoryId { get; set; }
     }
-
 }
+
