@@ -1,19 +1,10 @@
-﻿using FluentValidation;
-using FluentValidation.AspNetCore;
-using Project.Bll.DependencyResolvers;
+﻿using Project.Bll.DependencyResolvers;
+using Project.WebApi.DependencyResolvers;
 using Project.WebApi.MapperResolver;
-using Project.WebApi.Validators.RequestModels;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
-
-builder.Services.AddFluentValidationAutoValidation();
-builder.Services.AddFluentValidationClientsideAdapters();
-
-// Hepsini entegre etmemize gerek yokmuş çünkü aynı assembly'deki tüm IValidator implementasyonlarını buluyor.
-builder.Services.AddValidatorsFromAssemblyContaining<CreateCategoryRequestModelValidator>();
-
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -23,6 +14,7 @@ builder.Services.AddRepositoryService(); // repository servisinin middleware e e
 builder.Services.AddManagerService();
 builder.Services.AddAutoMapperService();
 builder.Services.AddVmMapperService();
+builder.Services.AddFluentValidationService();
 
 var app = builder.Build();
 
