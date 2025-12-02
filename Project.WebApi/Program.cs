@@ -1,4 +1,5 @@
 ﻿using Project.Bll.DependencyResolvers;
+using Project.WebApi.MapperResolver;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,6 +15,7 @@ builder.Services.AddDbContextService(); // context class ın middleware eklenmes
 builder.Services.AddRepositoryService(); // repository servisinin middleware e eklenmesi
 builder.Services.AddManagerService();
 builder.Services.AddAutoMapperService();
+builder.Services.AddVmMapperService();
 
 var app = builder.Build();
 

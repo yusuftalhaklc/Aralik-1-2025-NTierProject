@@ -72,7 +72,7 @@ namespace Project.Bll.Managers.Concretes
         public async Task<string> HardDeleteAsync(int id)
         {
             U originialValue = await _repository.GetByIdAsync(id);
-            if (originialValue == null || originialValue.Status != DataStatus.Deleted)
+            if (originialValue == null || originialValue.Status == DataStatus.Deleted)
             {
                 return "Sadece pasif olmayan veya mevcut bulunan veriler silinebilir.";
             }
@@ -84,7 +84,7 @@ namespace Project.Bll.Managers.Concretes
         public async Task<string> SoftDeleteAsync(int id)
         {
             U originialValue = await _repository.GetByIdAsync(id);
-            if (originialValue == null || originialValue.Status != DataStatus.Deleted)
+            if (originialValue == null || originialValue.Status == DataStatus.Deleted)
             {
                 return "Sadece pasif olmayan veya mevcut bulunan veriler silinebilir.";
             }
