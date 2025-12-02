@@ -1,5 +1,7 @@
 ﻿using AutoMapper;
 using Project.Bll.Dtos;
+using Project.Bll.Exceptions;
+using Project.Bll.Handlers;
 using Project.Bll.Managers.Abstracts;
 using Project.Dal.Repositories.Abstracts;
 using Project.Entities.Enums;
@@ -12,6 +14,9 @@ namespace Project.Bll.Managers.Concretes
         private readonly IRepository<U> _repository;
         protected readonly IMapper _mapper;
 
+        // Hata yönetimi için event (Microsoft ErrorEventHandler pattern'ine uygun)
+        public event Handlers.ErrorEventHandler? Error;
+
         public BaseManager(IRepository<U> repository, IMapper mapper)
         {
             _repository = repository;
@@ -20,97 +25,144 @@ namespace Project.Bll.Managers.Concretes
 
         public async Task CreateAsync(T entity)
         {
-            U domainEntity = _mapper.Map<U>(entity);
+            await ErrorHandler.ExecuteAsync(this, async () =>
+            {
+                if (entity == null)
+                    throw new ValidationException("Entity boş olamaz.");
 
-            domainEntity.CreatedDate = DateTime.Now;
-            domainEntity.Status = DataStatus.Inserted;
+                U domainEntity = _mapper.Map<U>(entity);
+                domainEntity.CreatedDate = DateTime.Now;
+                domainEntity.Status = DataStatus.Inserted;
 
-            await _repository.CreateAsync(domainEntity);
+                await _repository.CreateAsync(domainEntity);
+            }, Error);
         }
 
         public List<T> GetActives()
         {
-            List<U> values = _repository
-                .Where(x => x.Status != DataStatus.Deleted)
-                .ToList();
+            return ErrorHandler.Execute(this, () =>
+            {
+                List<U> values = _repository
+                    .Where(x => x.Status != DataStatus.Deleted)
+                    .ToList();
 
-            return _mapper.Map<List<T>>(values);
+                return _mapper.Map<List<T>>(values);
+            }, Error);
         }
 
         public async Task<IEnumerable<T>> GetAllAsync()
         {
-            IEnumerable<U> values = await _repository.GetAllAsync();
-
-            return _mapper.Map<List<T>>(values.ToList());
+            return await ErrorHandler.ExecuteAsync(this, async () =>
+            {
+                IEnumerable<U> values = await _repository.GetAllAsync();
+                return _mapper.Map<List<T>>(values.ToList());
+            }, Error);
         }
 
         public async Task<T> GetByIdAsync(int id)
         {
-            U originalvalue = await _repository.GetByIdAsync(id);
+            return await ErrorHandler.ExecuteAsync(this, async () =>
+            {
+                if (id <= 0)
+                    throw new ValidationException("Id 0'dan büyük olmalıdır.");
 
-            return _mapper.Map<T>(originalvalue);
+                U originalvalue = await _repository.GetByIdAsync(id);
+
+                if (originalvalue == null)
+                    throw new NotFoundException($"{id} ID'li kayıt bulunamadı.");
+
+                return _mapper.Map<T>(originalvalue);
+            }, Error);
         }
 
         public List<T> GetPassives()
         {
-            List<U> values = _repository
-               .Where(x => x.Status == DataStatus.Deleted)
-               .ToList();
+            return ErrorHandler.Execute(this, () =>
+            {
+                List<U> values = _repository
+                   .Where(x => x.Status == DataStatus.Deleted)
+                   .ToList();
 
-            return _mapper.Map<List<T>>(values);
+                return _mapper.Map<List<T>>(values);
+            }, Error);
         }
 
         public List<T> GetUpdatedes()
         {
-            List<U> values = _repository
-             .Where(x => x.Status == DataStatus.Updated)
-             .ToList();
+            return ErrorHandler.Execute(this, () =>
+            {
+                List<U> values = _repository
+                 .Where(x => x.Status == DataStatus.Updated)
+                 .ToList();
 
-            return _mapper.Map<List<T>>(values);
+                return _mapper.Map<List<T>>(values);
+            }, Error);
         }
 
         public async Task<string> HardDeleteAsync(int id)
         {
-            U originialValue = await _repository.GetByIdAsync(id);
-            if (originialValue == null || originialValue.Status == DataStatus.Deleted)
+            return await ErrorHandler.ExecuteAsync(this, async () =>
             {
-                return "Sadece pasif olmayan veya mevcut bulunan veriler silinebilir.";
-            }
+                if (id <= 0)
+                    throw new ValidationException("Id 0'dan büyük olmalıdır.");
 
-            await _repository.DeleteAsync(originialValue);
-            return $"{id}'li veri silinmiştir.";
+                U originialValue = await _repository.GetByIdAsync(id);
+                if (originialValue == null)
+                    throw new NotFoundException($"{id} ID'li kayıt bulunamadı.");
+
+                if (originialValue.Status == DataStatus.Deleted)
+                    throw new BusinessException("Pasif veriler silinemez.");
+
+                await _repository.DeleteAsync(originialValue);
+                return $"{id}'li veri silinmiştir.";
+            }, Error);
         }
 
         public async Task<string> SoftDeleteAsync(int id)
         {
-            U originialValue = await _repository.GetByIdAsync(id);
-            if (originialValue == null || originialValue.Status == DataStatus.Deleted)
+            return await ErrorHandler.ExecuteAsync(this, async () =>
             {
-                return "Sadece pasif olmayan veya mevcut bulunan veriler silinebilir.";
-            }
+                if (id <= 0)
+                    throw new ValidationException("Id 0'dan büyük olmalıdır.");
 
-            originialValue.DeletedDate = DateTime.Now;
-            originialValue.Status = DataStatus.Deleted;
-            await _repository.SaveChangesAsync();
+                U originialValue = await _repository.GetByIdAsync(id);
+                if (originialValue == null)
+                    throw new NotFoundException($"{id} ID'li kayıt bulunamadı.");
 
-            return $"{id}'li veri pasif hale getirilmiştir.";
+                if (originialValue.Status == DataStatus.Deleted)
+                    throw new BusinessException("Veri zaten pasif durumda.");
 
+                originialValue.DeletedDate = DateTime.Now;
+                originialValue.Status = DataStatus.Deleted;
+                await _repository.SaveChangesAsync();
+
+                return $"{id}'li veri pasif hale getirilmiştir.";
+            }, Error);
         }
 
         public async Task UpdateAsync(T entity)
         {
-            U originialValue = await _repository.GetByIdAsync(entity.Id);
-            if (originialValue == null || originialValue.Status != DataStatus.Deleted)
+            await ErrorHandler.ExecuteAsync(this, async () =>
             {
-                throw new Exception("Sadece pasif olmayan veya mevcut bulunan veriler güncellenebilir.");
-            }
+                if (entity == null)
+                    throw new ValidationException("Entity boş olamaz.");
 
-            U newValue = _mapper.Map<U>(entity);
+                if (entity.Id <= 0)
+                    throw new ValidationException("Id 0'dan büyük olmalıdır.");
 
-            newValue.UpdatedDate = DateTime.Now;
-            newValue.Status = DataStatus.Updated;
+                U originialValue = await _repository.GetByIdAsync(entity.Id);
+                if (originialValue == null)
+                    throw new NotFoundException($"{entity.Id} ID'li kayıt bulunamadı.");
 
-            await _repository.UpdateAsync(originialValue, newValue);
+                if (originialValue.Status == DataStatus.Deleted)
+                    throw new BusinessException("Pasif veriler güncellenemez.");
+
+                U newValue = _mapper.Map<U>(entity);
+                newValue.UpdatedDate = DateTime.Now;
+                newValue.Status = DataStatus.Updated;
+
+                await _repository.UpdateAsync(originialValue, newValue);
+            }, Error);
         }
     }
 
