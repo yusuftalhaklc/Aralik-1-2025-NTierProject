@@ -12,6 +12,8 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContextService(); // context class ın middleware eklenmesi
 builder.Services.AddRepositoryService(); // repository servisinin middleware e eklenmesi
+builder.Services.AddManagerService();
+builder.Services.AddAutoMapperService();
 
 var app = builder.Build();
 
