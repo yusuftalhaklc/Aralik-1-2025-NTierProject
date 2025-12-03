@@ -14,18 +14,6 @@ namespace Project.Bll.Handlers
                 throw;
             }
         }
-        
-        public static string ExecuteStringAsync(Func<string> action)
-        {
-            try
-            {
-                return action();
-            }
-            catch
-            {
-                throw;
-            }
-        }
     }
 
 }
